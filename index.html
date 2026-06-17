@@ -343,6 +343,7 @@ function goToDay(n){
   if(n>273) n=273;
   currentDay=n;
   document.getElementById('dayInput').value=n;
+  localStorage.setItem('ot-lastday',n);
   renderDay(n);
 }
 
@@ -461,7 +462,8 @@ function showTab(tab,btn){
 
 // 초기 렌더
 document.getElementById('ds').textContent=formatDate(new Date());
-goToDay(1);
+const lastDay=parseInt(localStorage.getItem('ot-lastday')||'1');
+goToDay(lastDay);
 </script>
 </body>
 </html>

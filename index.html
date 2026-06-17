@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
-<title>구약 일독표</title>
+<title>어! 성경 구약 1년 1독</title>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root{--bg:#f5f8f5;--card:#fff;--border:#d8e4d8;--text:#1a2e1a;--muted:#6a826a;--accent:#2d5a2d;--al:#e8f0e8;--ok:#2d6a4f;--r:14px;--sh:0 2px 12px rgba(30,60,30,.08);--read:#2d6a4f;--unread:#e0e0e0;--today:#e8f4e8}
@@ -34,6 +34,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 /* Day 배지 */
 .day-badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;margin-bottom:8px;letter-spacing:.04em}
+.today-tag{background:#fff;color:var(--accent);font-size:10px;font-weight:700;padding:1px 7px;border-radius:10px;margin-left:2px}
 .day-date{font-size:12px;color:var(--muted);margin-bottom:14px}
 
 /* 본문 카드 */
@@ -98,7 +99,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <body>
 
 <div class="hdr">
-  <h1>📖 구약 1년 1독</h1>
+  <h1>📖 어! 성경 구약 1년 1독</h1>
   <div class="ds" id="ds"></div>
 </div>
 
@@ -256,7 +257,8 @@ const WD=['일','월','화','수','목','금','토'];
 
 function getDayOfYear(d){
   const s=new Date(d.getFullYear(),0,1);
-  return Math.ceil((d-s)/86400000)+1;
+  const dOnly=new Date(d.getFullYear(),d.getMonth(),d.getDate());
+  return Math.round((dOnly-s)/86400000)+1;
 }
 function getTargetDate(off){
   const d=new Date(); d.setDate(d.getDate()+off); return d;
@@ -360,10 +362,12 @@ function renderDay(dayNum){
   const read=isRead(dayNum);
   const books=parseBooks(passage);
   const linksHtml=makeLinks(books);
+  const isToday=dayNum===todayDayNum();
+  const todayTag=isToday?` <span class="today-tag">오늘</span>`:'';
 
   content.innerHTML=`
     <div class="card">
-      <div class="day-badge">📅 Day ${dayNum} &nbsp;·&nbsp; ${vol}</div>
+      <div class="day-badge">📅 Day ${dayNum} &nbsp;·&nbsp; ${vol}${todayTag}</div>
       <div class="passage-card">
         <div class="passage-title">📖 말씀</div>
         <div class="passage-text">${passage}</div>
@@ -408,27 +412,29 @@ function renderHist(){
   document.getElementById('prog-pct').textContent=pct+'%';
   document.getElementById('prog-bar').style.width=pct+'%';
 
-  // 권별 묶음
+  // 월별 묶음 (1월 1일 기준)
   const grid=document.getElementById('daygrid');
   grid.innerHTML='';
 
-  let currentVol='';
-  let volGrid=null;
+  const year=new Date().getFullYear();
+  let currentMonth=-1;
+  let monthGrid=null;
 
   for(let day=1;day<=TOTAL;day++){
-    const vol=OT[day]?OT[day][0]:'';
+    const date=new Date(year,0,day);
+    const month=date.getMonth();
 
-    if(vol!==currentVol){
-      currentVol=vol;
+    if(month!==currentMonth){
+      currentMonth=month;
       const sec=document.createElement('div');
       sec.className='month-section';
       const lbl=document.createElement('div');
       lbl.className='month-label';
-      lbl.textContent=vol;
+      lbl.textContent=`${month+1}월`;
       sec.appendChild(lbl);
-      volGrid=document.createElement('div');
-      volGrid.className='day-grid';
-      sec.appendChild(volGrid);
+      monthGrid=document.createElement('div');
+      monthGrid.className='day-grid';
+      sec.appendChild(monthGrid);
       grid.appendChild(sec);
     }
 
@@ -447,7 +453,7 @@ function renderHist(){
         renderHist();
       };
     }
-    volGrid.appendChild(cell);
+    monthGrid.appendChild(cell);
   }
 }
 
@@ -462,8 +468,7 @@ function showTab(tab,btn){
 
 // 초기 렌더
 document.getElementById('ds').textContent=formatDate(new Date());
-const lastDay=parseInt(localStorage.getItem('ot-lastday')||'1');
-goToDay(lastDay);
+goToDay(todayDayNum());
 </script>
 </body>
 </html>

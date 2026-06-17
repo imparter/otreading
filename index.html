@@ -113,7 +113,7 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
     <button class="daybtn arrow" onclick="moveDay(-1)">◀</button>
     <div class="day-selector">
       <span class="day-sel-label">Day</span>
-      <input type="number" id="dayInput" min="1" max="273" value="1" onchange="goToDay(this.value)" onclick="this.select()">
+      <input type="number" id="dayInput" min="1" max="273" onchange="goToDay(this.value)" onclick="this.select()">
       <span class="day-sel-total">/ 273</span>
     </div>
     <button class="daybtn arrow" onclick="moveDay(1)">▶</button>

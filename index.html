@@ -19,11 +19,14 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .mtab{flex:1;padding:11px 6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
 .mtab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
 
-/* 날짜 네비게이션 (말씀탭 안) */
-.daynav{display:flex;gap:8px;margin-bottom:14px}
-.daybtn{flex:1;padding:9px 6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;border-radius:10px;transition:all .15s}
-.daybtn.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
-.daybtn:active{opacity:.8}
+/* Day 선택기 */
+.daynav{display:flex;align-items:center;gap:8px;margin-bottom:14px}
+.daybtn.arrow{width:44px;height:44px;font-size:18px;border:1px solid var(--border);background:var(--card);color:var(--accent);cursor:pointer;border-radius:10px;flex-shrink:0;transition:all .15s}
+.daybtn.arrow:active{background:var(--accent);color:#fff}
+.day-selector{flex:1;display:flex;align-items:center;justify-content:center;gap:6px;background:var(--card);border:1px solid var(--border);border-radius:10px;padding:8px 12px}
+.day-sel-label{font-size:13px;font-weight:600;color:var(--accent)}
+.day-selector input{width:52px;font-size:18px;font-weight:700;font-family:'Noto Serif KR',serif;color:var(--accent);border:none;outline:none;text-align:center;background:transparent}
+.day-sel-total{font-size:12px;color:var(--muted)}
 
 .pg{display:none;padding:14px}
 .pg.on{display:block}
@@ -107,9 +110,13 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 <!-- 말씀 탭 -->
 <div class="pg on" id="pg-read">
   <div class="daynav">
-    <button class="daybtn" id="btn-yd" onclick="switchDay(-1,this)">◀ 어제</button>
-    <button class="daybtn on" id="btn-td" onclick="switchDay(0,this)">오늘</button>
-    <button class="daybtn" id="btn-tm" onclick="switchDay(1,this)">내일 ▶</button>
+    <button class="daybtn arrow" onclick="moveDay(-1)">◀</button>
+    <div class="day-selector">
+      <span class="day-sel-label">Day</span>
+      <input type="number" id="dayInput" min="1" max="273" value="1" onchange="goToDay(this.value)" onclick="this.select()">
+      <span class="day-sel-total">/ 273</span>
+    </div>
+    <button class="daybtn arrow" onclick="moveDay(1)">▶</button>
   </div>
   <div id="content"></div>
 </div>
@@ -282,18 +289,6 @@ const BOOK_MAP = {
   '암':'AMO','옵':'OBA','욘':'JON','미':'MIC','나':'NAM',
   '합':'HAB','습':'ZEP','학':'HAG','슥':'ZEC','말':'MAL',
 };
-// holybible 책 번호 (구약 1~39)
-const BOOK_HB = {
-  '창':'1','출':'2','레':'3','민':'4','신':'5',
-  '수':'6','삿':'7','룻':'8','삼상':'9','삼하':'10',
-  '왕상':'11','왕하':'12','대상':'13','대하':'14',
-  '라':'15','느':'16','더':'17','욥':'18','시':'19',
-  '잠':'20','전':'21','아':'22','사':'23','렘':'24',
-  '애':'25','겔':'26','단':'27','호':'28','욜':'29',
-  '암':'30','옵':'31','욘':'32','미':'33','나':'34',
-  '합':'35','습':'36','학':'37','슥':'38','말':'39',
-};
-
 function parseBooks(passage){
   const results=[];
   const lines=passage.split('\n');
@@ -314,7 +309,7 @@ function parseBooks(passage){
       const chMatch=rest.match(/(\d+)/);
       const ch=chMatch?chMatch[1]:'1';
       if(!results.find(r=>r.ko===ko&&r.ch===ch)){
-        results.push({ko, label:`${ko} ${ch}장`, yvCode, hbCode:BOOK_HB[ko], ch});
+        results.push({ko, label:`${ko} ${ch}장`, yvCode, ch});
       }
       break;
     }
@@ -322,49 +317,54 @@ function parseBooks(passage){
   return results;
 }
 
+// holybible 책 번호 불필요, BOOK_HB 제거 후 YouVersion만 사용
+
 function makeLinks(books){
   return books.map(b=>`
     <div class="passage-row">
       <span class="passage-ref">${b.label}</span>
       <div class="passage-btns">
-        <a class="bb k" href="http://m.holybible.or.kr/B_GAE/cgi/bibleftxt.php?VR=GAE&VL=${b.hbCode}&CN=${b.ch}&CV=99" target="_blank">성경읽기</a>
-        <a class="bb v" href="https://www.bible.com/ko/bible/88/${b.yvCode}.${b.ch}.KRV" target="_blank">YouVersion</a>
+        <a class="bb v" href="https://www.bible.com/ko/bible/88/${b.yvCode}.${b.ch}.KRV" target="_blank">📖 YouVersion</a>
       </div>
     </div>`).join('');
 }
 
 // ── 말씀 탭 ──
-let offset=0;
-function switchDay(off,btn){
-  offset=off;
-  document.querySelectorAll('.daybtn').forEach(b=>b.classList.remove('on'));
-  btn.classList.add('on');
-  renderDay(off);
+let currentDay=1;
+
+function moveDay(d){
+  const next=Math.min(273,Math.max(1,currentDay+d));
+  goToDay(next);
 }
 
-function renderDay(off){
-  const d=getTargetDate(off);
-  const dayNum=getDayOfYear(d);
+function goToDay(n){
+  n=parseInt(n);
+  if(isNaN(n)||n<1) n=1;
+  if(n>273) n=273;
+  currentDay=n;
+  document.getElementById('dayInput').value=n;
+  renderDay(n);
+}
+
+function renderDay(dayNum){
   document.getElementById('ds').textContent=formatDate(new Date());
   const content=document.getElementById('content');
 
   if(!OT[dayNum]){
-    content.innerHTML=`<div class="noday">📅<br><br><b>${formatDate(d)}</b><br><br>Day ${dayNum}<br>일독 범위(1~273일)를 벗어났습니다</div>`;
+    content.innerHTML=`<div class="noday">📅<br><br>Day ${dayNum}<br>일독 범위(1~273일)를 벗어났습니다</div>`;
     return;
   }
 
   const [vol,passage]=OT[dayNum];
   const read=isRead(dayNum);
-  const label=off===-1?'어제':off===0?'오늘':'내일';
   const books=parseBooks(passage);
   const linksHtml=makeLinks(books);
 
   content.innerHTML=`
     <div class="card">
       <div class="day-badge">📅 Day ${dayNum} &nbsp;·&nbsp; ${vol}</div>
-      <div class="day-date">${formatDate(d)}</div>
       <div class="passage-card">
-        <div class="passage-title">📖 ${label}의 말씀</div>
+        <div class="passage-title">📖 말씀</div>
         <div class="passage-text">${passage}</div>
         <div class="passage-links">${linksHtml}</div>
       </div>
@@ -380,7 +380,6 @@ function handleReadToggle(dayNum){
   const btn=document.getElementById('readbtn');
   btn.className=`read-btn ${read?'read':'unread'}`;
   btn.innerHTML=read?'✅ 읽었어요':'○ 읽음 체크';
-  // 기록탭 열려있으면 갱신
   if(document.getElementById('pg-hist').classList.contains('on')) renderHist();
 }
 
@@ -462,7 +461,7 @@ function showTab(tab,btn){
 
 // 초기 렌더
 document.getElementById('ds').textContent=formatDate(new Date());
-renderDay(0);
+goToDay(1);
 </script>
 </body>
 </html>

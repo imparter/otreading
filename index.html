@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>구약 일독표</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@400;600&family=Noto+Sans+KR:wght@400;500&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#f5f8f5;--card:#fff;--border:#d8e4d8;--text:#1a2e1a;--muted:#6a826a;--accent:#2d5a2d;--al:#e8f0e8;--ok:#2d6a4f;--r:14px;--sh:0 2px 12px rgba(30,60,30,.08);--read:#2d6a4f;--unread:#e0e0e0;--today:#e8f4e8}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);min-height:100vh;max-width:480px;margin:0 auto;font-size:16px;-webkit-text-size-adjust:100%}
+.hdr{background:var(--accent);color:#fff;padding:18px 20px 14px;text-align:center;position:sticky;top:0;z-index:100}
+.hdr h1{font-family:'Noto Serif KR',serif;font-size:17px;font-weight:600;letter-spacing:.03em}
+.hdr .ds{font-size:12px;opacity:.8;margin-top:3px}
+
+/* 상단 탭 */
+.maintabs{display:flex;background:var(--card);border-bottom:1px solid var(--border);position:sticky;top:60px;z-index:99}
+.mtab{flex:1;padding:11px 6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;border:none;background:none;color:var(--muted);cursor:pointer;border-bottom:2px solid transparent}
+.mtab.on{color:var(--accent);border-bottom-color:var(--accent);font-weight:600}
+
+/* 날짜 네비게이션 (말씀탭 안) */
+.daynav{display:flex;gap:8px;margin-bottom:14px}
+.daybtn{flex:1;padding:9px 6px;font-size:13px;font-family:'Noto Sans KR',sans-serif;border:1px solid var(--border);background:var(--card);color:var(--muted);cursor:pointer;border-radius:10px;transition:all .15s}
+.daybtn.on{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600}
+.daybtn:active{opacity:.8}
+
+.pg{display:none;padding:14px}
+.pg.on{display:block}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:16px;margin-bottom:12px;box-shadow:var(--sh)}
+
+/* Day 배지 */
+.day-badge{display:inline-flex;align-items:center;gap:6px;background:var(--accent);color:#fff;font-size:12px;font-weight:600;padding:4px 12px;border-radius:20px;margin-bottom:8px;letter-spacing:.04em}
+.day-date{font-size:12px;color:var(--muted);margin-bottom:14px}
+
+/* 본문 카드 */
+.passage-card{background:var(--al);border:1px solid var(--border);border-radius:12px;padding:14px 16px;margin-bottom:12px}
+.passage-title{font-size:11px;font-weight:600;color:var(--accent);letter-spacing:.06em;margin-bottom:6px}
+.passage-text{font-family:'Noto Serif KR',serif;font-size:16px;font-weight:600;color:var(--text);line-height:1.5;white-space:pre-line}
+
+/* 링크 버튼 */
+.blinks{display:flex;gap:8px;margin-top:10px}
+.bb{flex:1;display:flex;align-items:center;justify-content:center;gap:5px;padding:10px 8px;border-radius:10px;font-size:12px;font-family:'Noto Sans KR',sans-serif;font-weight:500;text-decoration:none;border:1px solid;transition:opacity .15s,transform .1s}
+.bb:active{transform:scale(.97);opacity:.85}
+.bb.k{background:#eef4fa;color:#1a4a6e;border-color:#b8d4ec}
+.bb.v{background:#f0faf0;color:#2d6a2d;border-color:#b8d4b8}
+
+/* 읽음 체크 버튼 */
+.read-btn{width:100%;padding:14px;border-radius:12px;font-size:15px;font-family:'Noto Sans KR',sans-serif;font-weight:600;cursor:pointer;border:2px solid;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:8px}
+.read-btn.unread{background:#fff;color:var(--muted);border-color:var(--border)}
+.read-btn.read{background:var(--read);color:#fff;border-color:var(--read)}
+.read-btn:active{transform:scale(.98)}
+
+/* 본문별 링크 행 */
+.passage-links{margin-top:12px;display:flex;flex-direction:column;gap:8px}
+.passage-row{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.passage-ref{font-size:12px;font-weight:600;color:var(--accent);min-width:80px;white-space:nowrap}
+.passage-btns{display:flex;gap:6px;flex:1}
+.passage-btns .bb{flex:1;padding:7px 6px;font-size:11px}
+
+/* ── 기록 탭 ── */
+.stats-row{display:flex;gap:10px;margin-bottom:14px}
+.stat-card{flex:1;background:var(--card);border:1px solid var(--border);border-radius:12px;padding:12px;text-align:center;box-shadow:var(--sh)}
+.stat-num{font-size:24px;font-weight:700;color:var(--accent);font-family:'Noto Serif KR',serif}
+.stat-label{font-size:11px;color:var(--muted);margin-top:2px}
+
+/* 진행 바 */
+.prog-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;box-shadow:var(--sh)}
+.prog-label{font-size:12px;color:var(--muted);margin-bottom:8px;display:flex;justify-content:space-between}
+.prog-bar-bg{background:#e8e8e8;border-radius:20px;height:10px;overflow:hidden}
+.prog-bar{background:var(--read);height:10px;border-radius:20px;transition:width .4s}
+
+/* 연간 그리드 */
+.grid-wrap{background:var(--card);border:1px solid var(--border);border-radius:var(--r);padding:14px 16px;margin-bottom:12px;box-shadow:var(--sh)}
+.grid-title{font-size:13px;font-weight:600;color:var(--text);margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.grid-hint{font-size:11px;color:var(--muted);font-weight:400}
+.day-grid{display:flex;flex-wrap:wrap;gap:4px}
+.day-cell{width:28px;height:28px;border-radius:6px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:600;cursor:pointer;transition:transform .1s;border:1px solid transparent;position:relative}
+.day-cell:active{transform:scale(.9)}
+.day-cell.done{background:var(--read);color:#fff}
+.day-cell.undone{background:#e8e8e8;color:#aaa}
+.day-cell.future{background:#f0f0f0;color:#ccc;cursor:default}
+.day-cell.today-cell{border:2px solid var(--accent) !important;font-weight:700}
+.day-cell.done.today-cell{background:var(--accent)}
+
+/* 월별 섹션 */
+.month-section{margin-bottom:16px}
+.month-label{font-size:12px;font-weight:600;color:var(--accent);margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border)}
+
+/* 범례 */
+.legend{display:flex;gap:12px;font-size:11px;color:var(--muted);margin-top:10px;flex-wrap:wrap}
+.leg-dot{width:12px;height:12px;border-radius:3px;display:inline-block;margin-right:4px;vertical-align:middle}
+</style>
+</head>
+<body>
+
+<div class="hdr">
+  <h1>📖 구약 1년 1독</h1>
+  <div class="ds" id="ds"></div>
+</div>
+
+<div class="maintabs">
+  <button class="mtab on" onclick="showTab('read',this)">📖 말씀</button>
+  <button class="mtab" onclick="showTab('hist',this)">📊 기록</button>
+</div>
+
+<!-- 말씀 탭 -->
+<div class="pg on" id="pg-read">
+  <div class="daynav">
+    <button class="daybtn" id="btn-yd" onclick="switchDay(-1,this)">◀ 어제</button>
+    <button class="daybtn on" id="btn-td" onclick="switchDay(0,this)">오늘</button>
+    <button class="daybtn" id="btn-tm" onclick="switchDay(1,this)">내일 ▶</button>
+  </div>
+  <div id="content"></div>
+</div>
+
+<!-- 기록 탭 -->
+<div class="pg" id="pg-hist">
+  <div class="stats-row">
+    <div class="stat-card">
+      <div class="stat-num" id="s-done">0</div>
+      <div class="stat-label">읽은 날</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-left">273</div>
+      <div class="stat-label">남은 날</div>
+    </div>
+    <div class="stat-card">
+      <div class="stat-num" id="s-streak">0</div>
+      <div class="stat-label">연속 일수</div>
+    </div>
+  </div>
+  <div class="prog-wrap">
+    <div class="prog-label"><span>진행률</span><span id="prog-pct">0%</span></div>
+    <div class="prog-bar-bg"><div class="prog-bar" id="prog-bar" style="width:0%"></div></div>
+  </div>
+  <div class="grid-wrap">
+    <div class="grid-title">1년 읽기 현황 <span class="grid-hint">탭하면 토글</span></div>
+    <div class="legend">
+      <span><span class="leg-dot" style="background:var(--read)"></span>읽음</span>
+      <span><span class="leg-dot" style="background:#e8e8e8"></span>안읽음</span>
+      <span><span class="leg-dot" style="background:#f0f0f0"></span>미래</span>
+    </div>
+    <div style="margin-top:12px" id="daygrid"></div>
+  </div>
+</div>
+
+<script>
+const OT={
+1:['1권','창 1-3장'],2:['1권','창 4-7장'],3:['1권','창 8-11장'],4:['1권','창 12-14장'],
+5:['1권','창 15-17장'],6:['1권','창 18-19장'],7:['1권','창 20-22장'],8:['1권','창 23-25장'],
+9:['1권','창 26-28장'],10:['1권','창 29-31장'],11:['1권','창 32-34장'],12:['1권','창 35-38장'],
+13:['1권','창 39-41장'],14:['1권','창 42-44장'],15:['1권','창 45-47장'],16:['1권','창 48-50장'],
+17:['1권','출 1-3장'],18:['1권','출 4-6장'],19:['1권','출 7-8장'],20:['1권','출 9-11장'],
+21:['1권','출 12-13장'],22:['1권','출 14-15장'],23:['1권','출 16-18장'],24:['1권','출 19-21장'],
+25:['1권','출 22-24장'],26:['1권','출 25-27장'],27:['1권','출 28-31장'],28:['1권','출 32-34장'],
+29:['1권','출 35-37장'],30:['1권','출 38-40장'],31:['1권','민 9:1-14장\n민 1-2장'],
+32:['2권','민 3-4장'],33:['2권','민 5-6장'],34:['2권','민 7-8장\n민 9:15-23장'],
+35:['2권','민 10-12장'],36:['2권','민 13-14장'],37:['2권','민 15-17장'],
+38:['2권','민 18:1-20:13'],39:['2권','민 20:14-22장'],40:['2권','민 23-25장'],
+41:['2권','민 26-28장'],42:['2권','민 29-31장'],43:['2권','민 32-33장'],44:['2권','민 34-36장'],
+45:['2권','레 1-3장'],46:['2권','레 4-6장'],47:['2권','레 7-9장'],48:['2권','레 10장\n레 16-17장'],
+49:['2권','레 11-13장'],50:['2권','레 14-15장'],51:['2권','레 18-20장'],52:['2권','레 21-23장'],
+53:['2권','레 24-25장'],54:['2권','레 26-27장'],55:['2권','신 1-3장'],56:['2권','신 4-6장'],
+57:['2권','신 7-10장'],58:['2권','신 11-13장'],59:['2권','신 14-16장'],
+60:['3권','신 17-20장'],61:['3권','신 21-23장'],62:['3권','신 24-26장'],63:['3권','신 27-28장'],
+64:['3권','신 29-31장'],65:['3권','신 32-34장'],66:['3권','수 1-4장'],67:['3권','수 5-7장'],
+68:['3권','수 8-10장'],69:['3권','수 11-13장'],70:['3권','수 14-17장'],71:['3권','수 18-21장'],
+72:['3권','수 22-24장'],73:['3권','삿 1-3장'],74:['3권','삿 4-5장'],75:['3권','삿 6-8장'],
+76:['3권','삿 9-10장'],77:['3권','삿 11-12장'],78:['3권','삿 13-16장'],79:['3권','삿 17-18장'],
+80:['3권','삿 19-21장'],81:['3권','룻 1-4장'],82:['3권','삼상 1-3장'],83:['3권','삼상 4-8장'],
+84:['3권','삼상 9-12장'],85:['3권','삼상 13-15장'],86:['3권','삼상 16:1-18:7'],
+87:['3권','삼상 18:8-20장\n(시 59편)'],88:['3권','삼상 21장\n(시 1-2, 4-6, 8-10편)'],
+89:['3권','시 11-17편'],90:['3권','삼상 21장\n(시 34, 56편)'],
+91:['4권','삼상 22장 (시 52, 57편)'],92:['4권','삼상 24장\n(시 63, 142편)'],
+93:['4권','삼상 25장, 26장 (시 7편)'],94:['4권','삼상 32-34장'],
+95:['4권','삼하 1:1-2:11\n(시 19-22편)'],96:['4권','시 23-30편'],
+97:['4권','삼하 2:12-4장'],98:['4권','삼하 5장\n(시 31-33, 35편)'],
+99:['4권','시 36-41편'],100:['4권','삼하 6-7장\n(시 42-43편)'],
+101:['4권','시 44-50편'],102:['4권','삼하 8장 (시 60편)\n삼하 9-10장'],
+103:['4권','삼하 11-12장 (시 51편)'],104:['4권','삼하 13-14장'],
+105:['4권','삼하 15-17장'],106:['4권','삼하 18-19장 (시 3편)'],
+107:['4권','삼하 20-21장'],108:['4권','삼하 22장 (시 18편)'],
+109:['4권','삼하 23-24장\n(시 53, 55편)'],
+110:['4권','시 58, 61-62, 64-67편'],111:['4권','시 68-71편'],
+112:['4권','왕상 1-2장'],113:['4권','왕상 3-4장'],114:['4권','왕상 5-6장 (시 72편)'],
+115:['4권','잠 1-5장'],116:['4권','잠 6-11장'],117:['4권','잠 12-15장'],
+118:['4권','잠 7-8장'],119:['4권','왕상 9-11장'],120:['4권','잠 16-19장'],
+121:['5권','잠 20-23장'],122:['5권','잠 24-27장'],123:['5권','잠 28-31장'],
+124:['5권','전 1-4장'],125:['5권','전 5-8장'],126:['5권','전 9-12장'],
+127:['5권','아 1-8장'],128:['5권','왕상 12-13장'],129:['5권','왕상 14:1-16:28'],
+130:['5권','왕상 16:29-18장'],131:['5권','왕상 19-20장'],132:['5권','왕상 21-22장'],
+133:['5권','왕하 1-3장'],134:['5권','왕하 4-5장'],135:['5권','왕하 6:1-8:19'],
+136:['5권','왕하 8:20-24\n(욥 1장)'],137:['5권','왕하 10-12장'],
+138:['5권','왕하 13장\n(욥 1-3장)'],139:['5권','왕하 14장\n(호 1-3장)'],
+140:['5권','호 4-9장'],141:['5권','호 10-14장'],142:['5권','암 1-5장'],
+143:['5권','암 6-9장'],144:['5권','욘 1-4장'],145:['5권','왕하 15:1-12'],
+146:['5권','왕하 18-19장'],147:['5권','왕하 20장\n(사 1-2장)'],
+148:['5권','사 3-6장'],149:['5권','사 7-9장'],150:['5권','사 10-12장'],
+151:['5권','사 13-17장'],152:['6권','사 18-23장'],153:['6권','사 24-27장'],
+154:['6권','사 28-31장'],155:['6권','사 32-35장'],156:['6권','사 36-39장'],
+157:['6권','미 1-4장'],158:['6권','미 5-7장'],159:['6권','왕하 21:1-18\n(사 40-41장)'],
+160:['6권','사 42-44장'],161:['6권','사 45-48장'],162:['6권','사 49-51장'],
+163:['6권','사 52-54장'],164:['6권','사 55-59장'],165:['6권','사 60-63장'],
+166:['6권','사 64-66장'],167:['6권','왕하 21:19-23:30'],168:['6권','나 1-3장'],
+169:['6권','습 1-3장'],170:['6권','렘 1-3장'],171:['6권','렘 4-6장'],
+172:['6권','렘 11-12장'],173:['6권','렘 7-10장'],
+174:['6권','왕하 23:31-34\n(렘 21:11-22:19)\n왕하 23:35-24:5\n(렘 26장)'],
+175:['6권','렘 14-17장'],176:['6권','렘 18-20, 35장'],177:['6권','렘 46:1-49:33'],
+178:['6권','렘 36, 45, 25장'],179:['6권','합 1-3장'],180:['6권','렘 13장\n렘 22:20-30'],
+181:['6권','렘 23-24장'],182:['7권','왕하 24:18-25장\n(렘 29-30장)'],
+183:['7권','렘 31, 27-28장\n49:34-39'],184:['7권','렘 50-51장'],
+185:['7권','렘 37-38장\n렘 21:1-10'],186:['7권','렘 32-34장'],
+187:['7권','렘 39, 52, 40장'],188:['7권','렘 41-44장'],189:['7권','애 1-5장'],
+190:['7권','단 1-2장'],191:['7권','단 3-4장'],192:['7권','단 5-6장'],
+193:['7권','단 7-9장'],194:['7권','단 10-12장'],195:['7권','겔 1-3장'],
+196:['7권','겔 4-7장'],197:['7권','겔 8-11장'],198:['7권','겔 12-15장'],
+199:['7권','겔 16-17장'],200:['7권','겔 18-20장'],201:['7권','겔 21-23장'],
+202:['7권','겔 24-26장'],203:['7권','겔 27-28장'],204:['7권','겔 29-31장'],
+205:['7권','겔 32-33장'],206:['7권','겔 34-36장'],207:['7권','겔 37-39장'],
+208:['7권','겔 40-42장'],209:['7권','겔 43-45장'],210:['7권','겔 46-48장'],
+211:['7권','대상 1-2장'],212:['7권','대상 3-5장'],213:['8권','대상 6-7장'],
+214:['8권','대상 8-9장'],215:['8권','대상 10-11장'],216:['8권','대상 12-15장'],
+217:['8권','대상 (시 105, 73-74편)'],218:['8권','시 75-78편'],219:['8권','시 79-86편'],
+220:['8권','시 87-89편'],221:['8권','대상 17-20장'],
+222:['8권','대상 21:1-22:1\n(시 90-95편)'],223:['8권','시 96-103편'],
+224:['8권','(시 104, 106편)'],225:['8권','대상 22:2-24장'],226:['8권','대상 25-26장'],
+227:['8권','(시 107-112편)'],228:['8권','시 113-118편'],229:['8권','시 119편'],
+230:['8권','시 120-134편'],231:['8권','대상 27-29장'],232:['8권','(시 135-141편)'],
+233:['8권','시 143-150편'],234:['8권','대하 1-3장'],235:['8권','대하 4-6장'],
+236:['8권','대하 7-9장'],237:['8권','대하 10-12장'],238:['8권','대하 13-16장'],
+239:['8권','대하 17-18장'],240:['8권','대하 19-20장'],241:['8권','대하 21-24장'],
+242:['8권','대하 25-27장'],243:['8권','대하 28-29장'],
+244:['9권','대하 30-33장'],245:['9권','대하 34-36:21'],
+246:['9권','대하 36:22-23\n라 1-2장'],247:['9권','라 3-6장'],248:['9권','(학 1-2장)'],
+249:['9권','슥 1-8장'],250:['9권','슥 9-14장'],251:['9권','더 1-3장'],
+252:['9권','더 4-7장'],253:['9권','더 8-10장'],254:['9권','라 7-8장'],
+255:['9권','라 9-10장'],256:['9권','느 1-3장'],257:['9권','느 4-6장'],
+258:['9권','느 7-8장'],259:['9권','느 9-10장'],260:['9권','느 11-13장'],
+261:['9권','말 1-4장'],262:['9권','욥 1-4장'],263:['9권','욥 5-8장'],
+264:['9권','욥 9-11장'],265:['9권','욥 12-14장'],266:['9권','욥 15-18장'],
+267:['9권','욥 19-21장'],268:['9권','욥 22-26장'],269:['9권','욥 27-31장'],
+270:['9권','욥 32-34장'],271:['9권','욥 35-37장'],272:['9권','욥 38-39장'],
+273:['9권','욥 40-42장'],
+};
+
+const TOTAL=273;
+const WD=['일','월','화','수','목','금','토'];
+
+function getDayOfYear(d){
+  const s=new Date(d.getFullYear(),0,1);
+  return Math.ceil((d-s)/86400000)+1;
+}
+function getTargetDate(off){
+  const d=new Date(); d.setDate(d.getDate()+off); return d;
+}
+function formatDate(d){
+  return`${d.getFullYear()}년 ${d.getMonth()+1}월 ${d.getDate()}일 (${WD[d.getDay()]}요일)`;
+}
+function todayDayNum(){return getDayOfYear(new Date());}
+
+// localStorage 키: 'ot-read-YYYY-DDD'
+function readKey(dayNum){
+  return`ot-read-${new Date().getFullYear()}-${dayNum}`;
+}
+function isRead(dayNum){
+  return localStorage.getItem(readKey(dayNum))==='1';
+}
+function toggleRead(dayNum){
+  if(isRead(dayNum)) localStorage.removeItem(readKey(dayNum));
+  else localStorage.setItem(readKey(dayNum),'1');
+}
+
+// ── 성경 책 이름 → URL 코드 매핑 ──
+const BOOK_MAP = {
+  '창':'GEN','출':'EXO','레':'LEV','민':'NUM','신':'DEU',
+  '수':'JOS','삿':'JDG','룻':'RUT','삼상':'1SA','삼하':'2SA',
+  '왕상':'1KI','왕하':'2KI','대상':'1CH','대하':'2CH',
+  '라':'EZR','느':'NEH','더':'EST','욥':'JOB','시':'PSA',
+  '잠':'PRO','전':'ECC','아':'SNG','사':'ISA','렘':'JER',
+  '애':'LAM','겔':'EZK','단':'DAN','호':'HOS','욜':'JOL',
+  '암':'AMO','옵':'OBA','욘':'JON','미':'MIC','나':'NAM',
+  '합':'HAB','습':'ZEP','학':'HAG','슥':'ZEC','말':'MAL',
+};
+// holybible 책 번호 (구약 1~39)
+const BOOK_HB = {
+  '창':'1','출':'2','레':'3','민':'4','신':'5',
+  '수':'6','삿':'7','룻':'8','삼상':'9','삼하':'10',
+  '왕상':'11','왕하':'12','대상':'13','대하':'14',
+  '라':'15','느':'16','더':'17','욥':'18','시':'19',
+  '잠':'20','전':'21','아':'22','사':'23','렘':'24',
+  '애':'25','겔':'26','단':'27','호':'28','욜':'29',
+  '암':'30','옵':'31','욘':'32','미':'33','나':'34',
+  '합':'35','습':'36','학':'37','슥':'38','말':'39',
+};
+
+function parseBooks(passage){
+  const results=[];
+  const lines=passage.split('\n');
+  const sortedBooks=Object.entries(BOOK_MAP).sort((a,b)=>b[0].length-a[0].length);
+  for(const rawLine of lines){
+    const line=rawLine.replace(/[()]/g,'').trim();
+    if(!line) continue;
+    for(const [ko, yvCode] of sortedBooks){
+      const idx=line.indexOf(ko);
+      if(idx===-1) continue;
+      // 앞 글자가 한글이면 스킵 (다른 단어 일부)
+      const before=line[idx-1];
+      if(before && /[가-힣]/.test(before)) continue;
+      // 뒤 글자가 한글이면 스킵 (예: "나훔"의 "나"가 단독 책명 "나"로 오인)
+      const after=line[idx+ko.length];
+      if(after && /[가-힣]/.test(after)) continue;
+      const rest=line.slice(idx+ko.length).trim();
+      const chMatch=rest.match(/(\d+)/);
+      const ch=chMatch?chMatch[1]:'1';
+      if(!results.find(r=>r.ko===ko&&r.ch===ch)){
+        results.push({ko, label:`${ko} ${ch}장`, yvCode, hbCode:BOOK_HB[ko], ch});
+      }
+      break;
+    }
+  }
+  return results;
+}
+
+function makeLinks(books){
+  return books.map(b=>`
+    <div class="passage-row">
+      <span class="passage-ref">${b.label}</span>
+      <div class="passage-btns">
+        <a class="bb k" href="http://m.holybible.or.kr/B_GAE/cgi/bibleftxt.php?VR=GAE&VL=${b.hbCode}&CN=${b.ch}&CV=99" target="_blank">성경읽기</a>
+        <a class="bb v" href="https://www.bible.com/ko/bible/88/${b.yvCode}.${b.ch}.KRV" target="_blank">YouVersion</a>
+      </div>
+    </div>`).join('');
+}
+
+// ── 말씀 탭 ──
+let offset=0;
+function switchDay(off,btn){
+  offset=off;
+  document.querySelectorAll('.daybtn').forEach(b=>b.classList.remove('on'));
+  btn.classList.add('on');
+  renderDay(off);
+}
+
+function renderDay(off){
+  const d=getTargetDate(off);
+  const dayNum=getDayOfYear(d);
+  document.getElementById('ds').textContent=formatDate(new Date());
+  const content=document.getElementById('content');
+
+  if(!OT[dayNum]){
+    content.innerHTML=`<div class="noday">📅<br><br><b>${formatDate(d)}</b><br><br>Day ${dayNum}<br>일독 범위(1~273일)를 벗어났습니다</div>`;
+    return;
+  }
+
+  const [vol,passage]=OT[dayNum];
+  const read=isRead(dayNum);
+  const label=off===-1?'어제':off===0?'오늘':'내일';
+  const books=parseBooks(passage);
+  const linksHtml=makeLinks(books);
+
+  content.innerHTML=`
+    <div class="card">
+      <div class="day-badge">📅 Day ${dayNum} &nbsp;·&nbsp; ${vol}</div>
+      <div class="day-date">${formatDate(d)}</div>
+      <div class="passage-card">
+        <div class="passage-title">📖 ${label}의 말씀</div>
+        <div class="passage-text">${passage}</div>
+        <div class="passage-links">${linksHtml}</div>
+      </div>
+      <button class="read-btn ${read?'read':'unread'}" id="readbtn" onclick="handleReadToggle(${dayNum})">
+        ${read?'✅ 읽었어요':'○ 읽음 체크'}
+      </button>
+    </div>`;
+}
+
+function handleReadToggle(dayNum){
+  toggleRead(dayNum);
+  const read=isRead(dayNum);
+  const btn=document.getElementById('readbtn');
+  btn.className=`read-btn ${read?'read':'unread'}`;
+  btn.innerHTML=read?'✅ 읽었어요':'○ 읽음 체크';
+  // 기록탭 열려있으면 갱신
+  if(document.getElementById('pg-hist').classList.contains('on')) renderHist();
+}
+
+// ── 기록 탭 ──
+function renderHist(){
+  const today=todayDayNum();
+  let done=0, streak=0, curStreak=0;
+
+  for(let i=1;i<=TOTAL;i++){
+    if(isRead(i)) done++;
+  }
+  // 연속 일수: 오늘부터 거슬러 올라가기
+  for(let i=today;i>=1;i--){
+    if(isRead(i)) curStreak++;
+    else break;
+  }
+  streak=curStreak;
+
+  const left=Math.max(0,TOTAL-done);
+  const pct=Math.round(done/TOTAL*100);
+
+  document.getElementById('s-done').textContent=done;
+  document.getElementById('s-left').textContent=left;
+  document.getElementById('s-streak').textContent=streak;
+  document.getElementById('prog-pct').textContent=pct+'%';
+  document.getElementById('prog-bar').style.width=pct+'%';
+
+  // 권별 묶음
+  const grid=document.getElementById('daygrid');
+  grid.innerHTML='';
+
+  let currentVol='';
+  let volGrid=null;
+
+  for(let day=1;day<=TOTAL;day++){
+    const vol=OT[day]?OT[day][0]:'';
+
+    if(vol!==currentVol){
+      currentVol=vol;
+      const sec=document.createElement('div');
+      sec.className='month-section';
+      const lbl=document.createElement('div');
+      lbl.className='month-label';
+      lbl.textContent=vol;
+      sec.appendChild(lbl);
+      volGrid=document.createElement('div');
+      volGrid.className='day-grid';
+      sec.appendChild(volGrid);
+      grid.appendChild(sec);
+    }
+
+    const cell=document.createElement('div');
+    const read=isRead(day);
+    const isFuture=day>today;
+    const isToday=day===today;
+
+    cell.className='day-cell '+(isFuture?'future':read?'done':'undone')+(isToday?' today-cell':'');
+    cell.textContent=day;
+    cell.title=`Day ${day}: ${OT[day]?OT[day][1]:''}`;
+
+    if(!isFuture){
+      cell.onclick=()=>{
+        toggleRead(day);
+        renderHist();
+      };
+    }
+    volGrid.appendChild(cell);
+  }
+}
+
+// ── 탭 전환 ──
+function showTab(tab,btn){
+  document.querySelectorAll('.pg').forEach(e=>e.classList.remove('on'));
+  document.querySelectorAll('.mtab').forEach(e=>e.classList.remove('on'));
+  document.getElementById('pg-'+tab).classList.add('on');
+  btn.classList.add('on');
+  if(tab==='hist') renderHist();
+}
+
+// 초기 렌더
+document.getElementById('ds').textContent=formatDate(new Date());
+renderDay(0);
+</script>
+</body>
+</html>

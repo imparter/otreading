@@ -308,10 +308,19 @@ function parseBooks(passage){
       const after=line[idx+ko.length];
       if(after && /[가-힣]/.test(after)) continue;
       const rest=line.slice(idx+ko.length).trim();
-      const chMatch=rest.match(/(\d+)/);
-      const ch=chMatch?chMatch[1]:'1';
-      if(!results.find(r=>r.ko===ko&&r.ch===ch)){
-        results.push({ko, label:`${ko} ${ch}장`, yvCode, ch});
+      // 콜론(:) 이후 절 범위는 제외
+      const chPart=rest.split(':')[0];
+      // 쉼표로 나열된 항목은 각각 별도 장, 하이픈 범위는 시작 장만 사용
+      const chGroups=chPart.split(',');
+      const chNums=chGroups.map(g=>{
+        const m=g.match(/\d+/);
+        return m?m[0]:null;
+      }).filter(Boolean);
+      if(chNums.length===0) chNums.push('1');
+      for(const ch of chNums){
+        if(!results.find(r=>r.ko===ko&&r.ch===ch)){
+          results.push({ko, label:`${ko} ${ch}장`, yvCode, ch});
+        }
       }
       break;
     }
